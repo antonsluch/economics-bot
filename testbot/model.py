@@ -43,6 +43,7 @@ class Question(BaseSerializableObject):
         self._obj["answer_variants"] = list()
         self._obj["img"] = None  # url
         self._obj["text"] = None
+        self._obj["result"] = None
         question_obj.update(kwargs)
 
         for key, value in question_obj.items():
@@ -59,6 +60,7 @@ class Test(BaseSerializableObject):
         self._obj["is_exam"] = False
         self._obj["current_question"] = None
         self._obj["questions"] = list()
+        self._obj["is_available"] = True
         test_obj.update(kwargs)
 
         for key, value in test_obj.items():
@@ -90,6 +92,8 @@ class Package(BaseSerializableObject):
 if __name__ == "__main__":
     from pprint import pprint
 
-    x = {"name": "pkg_1", "tests": [{"name": "test_1", "questions": [{}, {}]}]}
-    p = Package(x, price=100.0)
-    pprint(dict(p))
+    # x = {"name": "pkg_1", "tests": [{"name": "test_1", "questions": [{}, {}]}]}
+    # p = Package(x, price=100.0)
+    # pprint(dict(p))
+    t = Test({"name": "xxx"})
+    pprint(dict(t))

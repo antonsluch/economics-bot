@@ -510,6 +510,7 @@ class MyChatHandler(telepot.aio.helper.ChatHandler, TelegramBot):
             t_index = 1
             for test in package["tests"]:
                 text += f"&gt;&gt;  <b>{test['name']}</b> -> /add_test_{t_index}_pkg_{p_index}\n"
+                t_index += 1
             text += "\n"
             p_index += 1
         inline_keyboard = [[InlineKeyboardButton(text='Выйти', callback_data='exit')]]
@@ -603,9 +604,17 @@ class MyChatHandler(telepot.aio.helper.ChatHandler, TelegramBot):
                 else:
                     await self.sendMessage(chat_id, "Чет не то... Повторите ввод:")
             elif "/add_test_" in text and text[:10] == "/add_test_" and "_pkg_" in text:
-                # TODO: тут добавляем отдельный тест пользователю
+                # тут добавляем отдельный тест пользователю
+                indexes = list(map(int, text[10:].split("_pkg_")))
+                pkg_index = indexes[1] - 1
+                packages = await data.get_bot_packages()
+                package = await data.get_bot_package(packages[pkg_index])
+                test_index = indexes[0] - 1
+                test = package["tests"][test_index]
+                # pprint(test)
+                await data.add_user_test(chat_id, test)
                 await data.set_user_callback(chat_id, None)
-                await self.sendMessage(chat_id, "Принято, не добавлено.")
+                await self.sendMessage(chat_id, "Тест добавлен!")
             else:
                 await self.sendMessage(chat_id, ('Вы находитель в режиме выбора тестов. '
                                                  'Для выхода нажмите "exit" под предидущим сообщением'))

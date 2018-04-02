@@ -10,6 +10,7 @@ import motor.motor_asyncio
 import json
 
 from testbot.settings import settings
+from testbot.model import *
 
 # Подключаемся к хранилищу
 DB_URL = settings["mongodb"]["test"][0]["url"]
@@ -36,7 +37,6 @@ async def add_new_user(user_id: int, name: str, surname: str, role="STUDENT"):
             "name": name,
             "surname": surname,
             "tests": [],
-            "questions": [],
             "callback": None
         }
         result = await db.users.insert_one(user)
@@ -45,36 +45,49 @@ async def add_new_user(user_id: int, name: str, surname: str, role="STUDENT"):
         print("user already exists")
 
 
-async def add_question_result(user_id: int, question: dict):
-    """
-    Добавляет результат ответа на вопрос в массив questions таблицы users
-    Пример вопроса:
-        {
-            "question_id": 0,
-            "test_id": 0,
-            "user_answer": "answer",
-            "points": 1
-        }
-    :param user_id: id пользователя в Телеграме
-    :param question: объект вопроса (см. пример)
-    """
+async def add_question_result(user_id: int, test_index: int, question_index: int, result: int):
     # TODO
-    # Переделать, используя "$push"
+    res = await db.users.find_one({"tg_id": user_id}, projection=["tests.questions"])
+
+
+async def add_user_test(user_id: int, test_obj: dict):
+    """
+    Добавляет в список tests пользователя новый тест
+    :param user_id: id пользователя в Телеграме
+    :param test_obj: объект теста
+    """
     key = {"tg_id": user_id}
-    user = await db.users.find_one(key)
-    questions = user["questions"]
-    questions.append(question)
-    result = await db.users.update_one(key, {"$set": {"questions": questions}})
+    test = Test(test_obj)
+    res = await db.users.update_one(key, {"$push": {"tests": dict(test)}})
 
 
 async def get_user_tests(user_id: int):
     """
     Получает все доступные тесты пользователя
     :param user_id: id пользователя в Телеграме
-    :return: список тестов
+    :return: список индексов тестов
     """
+    # FIXME
+    res = await db.users.find_one({"tg_id": user_id}, projection=["tests.is_avalible"])
+    user = await db.users.find_one({"tg_id": user_id})
+    all_tests = user["tests"]
+    if all_tests:
+        tests = []
+        for i in range(len(all_tests)):
+            if all_tests[i]["is_avalible"]:
+                tests.append(i)
+        return tests
+    return None
+
+
+async def get_user_test(user_id: int, test_index: int):
     # TODO
-    pass
+    res = await db.users.find_one({"tg_id": user_id}, projection=["tests"])
+    tests = res["tests"]
+    if tests:
+        return tests[test_index]
+    else:
+        return None
 
 
 async def get_user_callback(user_id: int):
@@ -170,8 +183,6 @@ async def get_tg_document(token: str, file_path: str):
 # ======= PACKAGES ============== =============================== ======= PACKAGES ============== ====================
 # ===== PACKAGES ================ =============================== ===== PACKAGES ================ ====================
 # === PACKAGES ================== =============================== === PACKAGES ================== ====================
-
-from testbot.model import *
 
 
 async def get_bot_packages():
@@ -385,26 +396,13 @@ async def delete_test_question(package_name: str, test_name: str, question_index
 
 if __name__ == '__main__':
     async def test():
+        # print(await get_user_callback(240014565))
+        # print(await delete_bot_package("a"*97))
+        # print(await add_package_test("first", "test1"))
         # print(await edit_package_test("first", "test1", {"name": "test0"}))
 
-        print(await get_bot_packages())
-        # pprint(await get_bot_setting("creator_help"))
-        # for pkg in packages:
-        #     print(await delete_bot_package(pkg))
-        # pprint(package)
-
-        # print(await edit_package_test("test", "qqq", {"name": "AAA"}))
-        # print(await edit_test_question("first", "test0", question_index=0, question_key="answer",
-        # updated_value="xxx"))
-        # pprint(await get_package_test("first", "test0"))
+        # print(await add_bot_package("new_formatted_package"))
+        # pprint(await get_user_tests(240014565))
+        pprint(await add_user_test(240014565, {}))
     loop = asyncio.get_event_loop()
-    # loop.run_until_complete(add_new_user(0, "test", "test"))
-    # loop.run_until_complete(add_question_result(0, {"test": "test"}))
-    # loop.run_until_complete(edit_bot_settings("img", {
-    #         "data": "m"
-    #     }))
-    # loop.run_until_complete(add_package_test("test", "abc"))
-    # loop.run_until_complete(delete_bot_package("test"))
-    # loop.run_until_complete()
     loop.run_until_complete(test())
-    # loop.run_until_complete()
